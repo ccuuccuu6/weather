@@ -27,6 +27,9 @@ continuous_cols = ['Campari EMEA Precipitation (log)',
                    'Campari EMEA Mean Temp (log)']
 dummy_cols = ['Q1', 'Q2', 'Q3']
 
+# For labeling the features in the final model; the intercept is added later.
+feature_names = continuous_cols + dummy_cols
+
 # -----------------------------------------------------------------
 # 3. Expanding Window Setup
 # -----------------------------------------------------------------
@@ -35,11 +38,13 @@ train_size = int(len(df) * 0.2)
 df_train = df.iloc[:train_size].copy()  # initial training set
 df_test = df.iloc[train_size:].copy()   # test set (to be forecasted sequentially)
 
-# Prepare lists to store test predictions, actual values, residuals, and coefficient history
+# Prepare lists to store test predictions, actual values, residuals,
+# coefficient history, and feature contributions (including intercept)
 predictions = []
 actuals = []
 residuals = []
 coefficient_history = []
+feature_contributions_history = []
 test_indices = df_test.index.tolist()  # preserve the original test indices for plotting
 
 # -----------------------------------------------------------------
@@ -88,6 +93,14 @@ for i, idx in enumerate(test_indices, start=1):
     # Predict the test observation
     y_pred = model.predict(X_current_final)[0]
     
+    # Calculate feature contributions: each feature's value times its coefficient
+    contributions = (X_current_final.flatten() * model.coef_)
+    # Also include the intercept as its own contribution
+    intercept_contribution = model.intercept_
+    # Combine intercept with feature contributions
+    contributions_with_intercept = np.concatenate(([intercept_contribution], contributions))
+    feature_contributions_history.append(contributions_with_intercept)
+    
     # Store prediction, actual value, and residual
     predictions.append(y_pred)
     actuals.append(y_current)
@@ -134,6 +147,43 @@ plt.axhline(0, color='red', linestyle='--', label='Zero Error')
 plt.xlabel('Predicted Values')
 plt.ylabel('Residuals')
 plt.title('Residual Plot for Expanding Window Ridge Regression')
+plt.legend()
+plt.show()
+
+# Chart 4: Absolute contribution of features
+# We want to have positive contributions stacked upward from 0 and negative contributions stacked downward from 0.
+all_feature_names = ['Intercept'] + feature_names
+
+# Convert contributions history to an array: shape (n_periods, n_features+1)
+feature_contributions_history = np.array(feature_contributions_history)
+period_indices = np.arange(len(feature_contributions_history))
+
+plt.figure(figsize=(12, 8))
+# Initialize accumulators for positive and negative contributions separately.
+pos_bottom = np.zeros(len(feature_contributions_history))
+neg_bottom = np.zeros(len(feature_contributions_history))
+
+# Loop over each feature and plot positive and negative parts separately.
+for j, fname in enumerate(all_feature_names):
+    seg = feature_contributions_history[:, j]
+    pos_seg = np.where(seg > 0, seg, 0)
+    neg_seg = np.where(seg < 0, seg, 0)
+    
+    # Plot positive contributions starting from 0 upward.
+    bar_handle = plt.bar(period_indices, pos_seg, bottom=pos_bottom, label=fname if np.any(pos_seg) else None)
+    pos_bottom += pos_seg
+    
+    # Plot negative contributions starting from 0 downward, using the same color.
+    plt.bar(period_indices, neg_seg, bottom=neg_bottom, color=bar_handle[0].get_facecolor(), label=fname if np.any(neg_seg) and np.all(pos_seg==0) else None)
+    neg_bottom += neg_seg
+
+# Add markers for predicted values (diamond, black) and actual values (cross, red).
+plt.plot(period_indices, predictions, marker='D', linestyle='None', markersize=8, color='black', label='Predicted Value')
+plt.plot(period_indices, actuals, marker='X', linestyle='None', markersize=8, color='red', label='Actual Value')
+
+plt.xlabel('Test Period Index')
+plt.ylabel('Contribution to Prediction')
+plt.title('Stacked Bar Chart of Feature Contributions (with Intercept) by Test Period')
 plt.legend()
 plt.show()
 
