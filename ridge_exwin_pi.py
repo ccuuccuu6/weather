@@ -29,7 +29,7 @@ dummy_cols = ['Q1', 'Q2', 'Q3']
 feature_names = continuous_cols + dummy_cols
 
 # Use 20% of the actual data as the initial training set (ordered by index)
-train_size = int(len(df_actual) * 0.2)
+train_size = int(len(df_actual) * 0.75)
 df_train = df_actual.iloc[:train_size].copy()  # initial training set
 df_test = df_actual.iloc[train_size:].copy()   # test set (to be forecasted sequentially)
 
@@ -173,20 +173,20 @@ for idx, row in df_future.iterrows():
 # 5. New Line Graph: Actual and Predicted Values with 90% and 75% PI for Future Data
 # -----------------------------------------------------------------
 plt.figure(figsize=(10, 6))
-# Plot actual Sales for all rows with observed Sales
-plt.plot(df_actual.index, df_actual[target_col], 'o-', label='Actual Sales')
+# Plot actual Sales only for the test set (where predictions exist)
+plt.plot(df_test.index, df_test[target_col], 'o-', label='Actual Sales (Test)')
 # Plot test set predictions (from expanding window)
 plt.plot(df_test.index, predictions, 'o-', label='Predicted Sales (Test)')
 
-# Connect last actual observation with future forecasts
-last_actual_index = df_actual.index[-1]
-last_actual_value = df_actual[target_col].iloc[-1]
-# Combine last actual point with forecasted indices and predictions
+# Connect last test observation with future forecasts
+last_actual_index = df_test.index[-1]
+last_actual_value = df_test[target_col].iloc[-1]
+# Combine last test point with forecasted indices and predictions
 combined_indices = np.concatenate(([last_actual_index], df_future.index))
 combined_forecast = np.concatenate(([last_actual_value], future_predictions))
 plt.plot(combined_indices, combined_forecast, 'o-', label='Predicted Sales (Future)')
 
-# For shading, extend the PI boundaries to start from the last actual value.
+# For shading, extend the PI boundaries to start from the last test actual value.
 combined_lower_90 = np.concatenate(([last_actual_value], np.array(future_PI_lower)))
 combined_upper_90 = np.concatenate(([last_actual_value], np.array(future_PI_upper)))
 combined_lower_75 = np.concatenate(([last_actual_value], np.array(future_PI_lower_75)))
