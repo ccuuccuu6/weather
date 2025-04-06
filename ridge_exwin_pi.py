@@ -5,7 +5,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.linear_model import Ridge  # Using Ridge for regularization
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 # -----------------------------------------------------------------
 # 1. Load Data and Separate Actual vs. Future Data
@@ -28,7 +28,7 @@ continuous_cols = ['Campari EMEA Precipitation (log)',
 dummy_cols = ['Q1', 'Q2', 'Q3']
 feature_names = continuous_cols + dummy_cols
 
-# Use 20% of the actual data as the initial training set (ordered by index)
+# Use 75% of the actual data as the initial training set (ordered by index)
 train_size = int(len(df_actual) * 0.75)
 df_train = df_actual.iloc[:train_size].copy()  # initial training set
 df_test = df_actual.iloc[train_size:].copy()   # test set (to be forecasted sequentially)
@@ -108,8 +108,16 @@ for i, idx in enumerate(test_indices, start=1):
     actuals.append(y_current)
     residuals.append(y_current - y_pred)
     
+    # Cumulative metrics calculations
     cumulative_r2 = r2_score(actuals, predictions)
+    cumulative_rmse = np.sqrt(mean_squared_error(actuals, predictions))
+    cumulative_mae = mean_absolute_error(actuals, predictions)
+    cumulative_normalized_mae = cumulative_mae / np.mean(actuals)
+    
     print(f"Cumulative R² after observation {i}: {cumulative_r2:.4f}")
+    print(f"Cumulative MAE after observation {i}: {cumulative_mae:.4f}")
+    print(f"Cumulative Normalized MAE after observation {i}: {cumulative_normalized_mae:.4f}")
+    print(f"Cumulative RMSE after observation {i}: {cumulative_rmse:.4f}")
     
     # Expand the training set by appending the current test observation
     df_train = pd.concat([df_train, current_test])
