@@ -4,48 +4,32 @@ import requests
 import datetime
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────
-# Paste your token here (keep this file secure!).
-BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAABQx1wEAAAAAlYJhxOp18vuHglsxBBRvhNorcgA%3DMpqhdRP542F8qla3rJctGsXHizPalo6QX7iyJw3oyXVKTzQTyB"
-
-if not BEARER_TOKEN or "YOUR_BEARER_TOKEN_HERE" in BEARER_TOKEN:
+BEARER_TOKEN = "…your token here…"
+if not BEARER_TOKEN:
     sys.exit("Error: Please set your BEARER_TOKEN in the script.")
 
-# Base URL for the counts endpoint
 URL = "https://api.twitter.com/2/tweets/counts/recent"
 
 def fetch_recent_counts(query, granularity="day"):
-    """
-    Fetch recent tweet counts for the given query.
-    - query: your search string (e.g. "#boycottdove")
-    - granularity: "day" | "hour" | "minute"
-    Returns the parsed JSON.
-    """
-    headers = {
-        "Authorization": f"Bearer {BEARER_TOKEN}"
-    }
-    params = {
-        "query":       query,
-        "granularity": granularity
-    }
-    resp = requests.get(URL, headers=headers, params=params)
+    headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}
+    params  = {"query": query, "granularity": granularity}
+    resp    = requests.get(URL, headers=headers, params=params)
     resp.raise_for_status()
     return resp.json()
 
 def print_counts(data):
-    """
-    Given the JSON from fetch_recent_counts, print each bucket:
-    YYYY-MM-DD → tweet_count
-    """
     for bucket in data.get("data", []):
-        day = bucket["start"][:10]        # e.g. "2025-05-16"
+        day   = bucket["start"][:10]
         count = bucket["tweet_count"]
         print(f"{day}: {count}")
 
-if __name__ == "__main__":
-    # Now default is just "#boycottdove", which counts both posts and retweets.
-    # You can still override by passing a different query:
-    #   python counts.py "#otherhashtag"
-    query = sys.argv[1] if len(sys.argv) > 1 else "#boycottdove"
+def main(query="#boycottdove"):
     print(f"Fetching daily counts for: {query!r}\n")
-    result = fetch_recent_counts(query)
-    print_counts(result)
+    data = fetch_recent_counts(query)
+    print_counts(data)
+
+if __name__ == "__main__":
+    # If you run as a script you still get a CLI override:
+    #   python yourscript.py "#otherhashtag"
+    q = sys.argv[1] if len(sys.argv) > 1 else None
+    main(q or "#boycottdove")
