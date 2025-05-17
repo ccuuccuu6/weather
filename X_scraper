@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import argparse
 import sys
+import os
 import requests
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────
@@ -14,12 +14,6 @@ URL = "https://api.twitter.com/2/tweets/counts/recent"
 # ─── FUNCTIONS ─────────────────────────────────────────────────────────────
 
 def fetch_recent_counts(query: str, granularity: str = "day") -> dict:
-    """
-    Fetch recent tweet counts for the given query.
-    - query: your search string (e.g. "#boycottdove")
-    - granularity: "day" | "hour" | "minute"
-    Returns the parsed JSON as a dict.
-    """
     headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}
     params  = {"query": query, "granularity": granularity}
     resp    = requests.get(URL, headers=headers, params=params)
@@ -27,34 +21,28 @@ def fetch_recent_counts(query: str, granularity: str = "day") -> dict:
     return resp.json()
 
 def print_counts(data: dict) -> None:
-    """
-    Given the JSON from fetch_recent_counts, print each bucket:
-    YYYY-MM-DD → tweet_count
-    """
     for bucket in data.get("data", []):
-        day   = bucket["start"][:10]    # e.g. "2025-05-16"
+        day   = bucket["start"][:10]
         count = bucket["tweet_count"]
         print(f"{day}: {count}")
 
-# ─── MAIN (with argparse that ignores unknown flags) ──────────────────────
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Fetch daily tweet counts for a query",
-        add_help=True
-    )
-    parser.add_argument(
-        "query",
-        nargs="?",
-        default="#boycottdove",
-        help="Hashtag or query string to count (default: #boycottdove)"
-    )
-    # parse_known_args will skip over any ipython/Jupyter flags
-    args, _unknown = parser.parse_known_args()
-
-    print(f"Fetching daily counts for: {args.query!r}\n")
-    data = fetch_recent_counts(args.query)
+def main(query: str = "#boycottdove") -> None:
+    print(f"Fetching daily counts for: {query!r}\n")
+    data = fetch_recent_counts(query)
     print_counts(data)
 
+# ─── ENTRY POINT ────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    main()
+    # Grab everything after the script name…
+    raw = sys.argv[1:]
+    # …but drop any IPython flags or kernel-.json paths:
+    args = [
+        a for a in raw
+        if not a.startswith("-")         # no flags like -f, --profile, etc.
+        and not a.endswith(".json")       # no kernel-*.json files
+        and os.sep not in a               # no paths with / or \
+    ]
+    # First “real” arg is our query; else default:
+    query = args[0] if args else "#boycottdove"
+    main(query)
