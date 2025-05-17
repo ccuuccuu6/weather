@@ -1,29 +1,62 @@
+import sys
+!{sys.executable} -m pip install --upgrade pip snscrape pandas matplotlib
+
+
+
 import snscrape.modules.twitter as sntwitter
 import pandas as pd
 from datetime import date, timedelta
+import matplotlib.pyplot as plt
 
-# Adjust as needed:
-START = date(2020,1,1)
-END   = date.today()
-HASHTAG = "boycottdove"   # snscrape’s query omits the “#”
 
-def daterange(start, end, step=timedelta(days=1)):
-    cur = start
-    while cur < end:
-        yield cur
-        cur += step
+
+
+# ───── ADJUST THESE ─────
+START = date(2020, 1, 1)     # first day to scrape
+END   = date.today()         # up to today
+HASHTAG = "boycottdove"      # snscrape omits the '#'
+STEP = timedelta(days=1)     # daily buckets
+# ────────────────────────
+
+
+
+
+
+def daterange(start_date, end_date, step):
+    current = start_date
+    while current < end_date:
+        yield current
+        current += step
 
 records = []
-for d in daterange(START, END):
-    since = d.isoformat()
-    until = (d + timedelta(days=1)).isoformat()
+for day in daterange(START, END, STEP):
+    since = day.isoformat()
+    until = (day + STEP).isoformat()
     query = f"#{HASHTAG} since:{since} until:{until}"
-    count = 0
-    for _ in sntwitter.TwitterSearchScraper(query).get_items():
-        count += 1
+    count = sum(1 for _ in sntwitter.TwitterSearchScraper(query).get_items())
     records.append({"date": since, "tweets": count})
     print(f"{since}: {count}")
 
 df = pd.DataFrame(records)
-df.to_csv("boycottdove_tweet_counts.csv", index=False)
-print("Written boycottdove_tweet_counts.csv")
+
+
+
+
+
+
+
+# Save CSV
+csv_path = "boycottdove_tweet_counts.csv"
+df.to_csv(csv_path, index=False)
+print(f"Written {csv_path}")
+
+# Plot
+df["date"] = pd.to_datetime(df["date"])
+df = df.set_index("date")
+plt.figure(figsize=(12,6))
+plt.plot(df.index, df["tweets"])
+plt.title("Daily Tweet Counts for #boycottdove")
+plt.xlabel("Date")
+plt.ylabel("Tweets per Day")
+plt.tight_layout()
+plt.show()
