@@ -1,0 +1,29 @@
+import snscrape.modules.twitter as sntwitter
+import pandas as pd
+from datetime import date, timedelta
+
+# Adjust as needed:
+START = date(2020,1,1)
+END   = date.today()
+HASHTAG = "boycottdove"   # snscrape’s query omits the “#”
+
+def daterange(start, end, step=timedelta(days=1)):
+    cur = start
+    while cur < end:
+        yield cur
+        cur += step
+
+records = []
+for d in daterange(START, END):
+    since = d.isoformat()
+    until = (d + timedelta(days=1)).isoformat()
+    query = f"#{HASHTAG} since:{since} until:{until}"
+    count = 0
+    for _ in sntwitter.TwitterSearchScraper(query).get_items():
+        count += 1
+    records.append({"date": since, "tweets": count})
+    print(f"{since}: {count}")
+
+df = pd.DataFrame(records)
+df.to_csv("boycottdove_tweet_counts.csv", index=False)
+print("Written boycottdove_tweet_counts.csv")
