@@ -4,6 +4,11 @@ import sys
   --index-url https://pypi.org/simple/ --trusted-host pypi.org \
   --no-binary=:all: snscrape pandas matplotlib
 
+%pip install \
+  --index-url https://pypi.org/simple/ \
+  --trusted-host pypi.org \
+  snscrape pandas matplotlib
+
 
 import snscrape.modules.twitter as sntwitter
 import pandas as pd
