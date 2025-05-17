@@ -1,6 +1,8 @@
 import sys
 !{sys.executable} -m pip install --upgrade pip snscrape pandas matplotlib
-
+%pip install \
+  --index-url https://pypi.org/simple/ --trusted-host pypi.org \
+  --no-binary=:all: snscrape pandas matplotlib
 
 
 import snscrape.modules.twitter as sntwitter
