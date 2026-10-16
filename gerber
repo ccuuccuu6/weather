@@ -1,0 +1,11 @@
+(.venv) richardli@Richards-MacBook-Pro-2 AI trading bot % python3 x_scrape.py 'gerber (lawsuit OR "heavy metals" OR arsenic OR baby OR food)'
+Fetching daily counts for: 'gerber (lawsuit OR "heavy metals" OR arsenic OR baby OR food)'
+
+2026-10-09: 49
+2026-10-10: 36
+2026-10-11: 41
+2026-10-12: 29
+2026-10-13: 26
+2026-10-14: 2807
+2026-10-15: 3095
+2026-10-16: 246
